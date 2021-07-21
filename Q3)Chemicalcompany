@@ -1,0 +1,103 @@
+#include <cstdio>
+#include <iostream>
+#include <algorithm>
+#include <vector>
+#include <cstring>
+#include <queue>
+#include <string>
+#include <map>
+using namespace std;
+#define Del(a,b) memset(a,b,sizeof(a))
+const int inf = 0x3f3f3f3f;
+const int N = 220;
+int n,m;
+struct Node
+{
+    int from,to,cap,flow,cost;
+};
+vector<Node> e;
+vector<int> v[N];   
+int vis[N],dis[N]; // Mark the minimum cost from the source point to each point
+int p[N],a[N];  // record path
+void Clear(int x)
+{
+    for(int i=0;i<=x;i++)
+        v[i].clear();
+    e.clear();
+}
+void add_Node(int from,int to,int cap,int cost)
+{
+    e.push_back((Node){from,to,cap,0,cost});
+    e.push_back((Node){to,from,0,0,-cost});
+    int len = e.size()-1;
+    v[to].push_back(len);    //Record the relationship in the order of input
+    v[from].push_back(len-1);
+}
+bool SPFA(int s,int t,int& flow,int& cost)
+{
+    Del(dis,inf);  Del(vis,0);
+    dis[s] = 0;  vis[s] = 1;
+    p[s] = 0;  a[s] = inf;
+    queue<int> q;
+    q.push(s);
+    while(!q.empty())
+    {
+        int u = q.front();
+        q.pop();
+        vis[u] = 0;
+        for(unsigned short i=0; i<v[u].size(); i++)
+        {
+            Node& g = e[v[u][i]];
+            if(g.cap>g.flow && dis[g.to] > dis[u]+g.cost)
+            {
+                dis[g.to] = dis[u] + g.cost;
+                p[g.to] = v[u][i];
+                a[g.to] = min(a[u],g.cap-g.flow);//Minimum traffic on the path
+                if(!vis[g.to])
+                {
+                    q.push(g.to);
+                    vis[g.to]=1;
+                }
+            }
+        }
+    }
+    if(dis[t] == inf)
+        return false;
+    flow += a[t];
+    cost += dis[t]*a[t];
+    int u = t;
+    while(u!=s)
+    {
+        e[p[u]].flow += a[t];
+        e[p[u]^1].flow -= a[t];
+        u = e[p[u]].from;
+    }
+    return true;
+}
+int Min_Cost(int s,int t,int& flow)
+{
+    int cost = 0;
+    while(SPFA(s,t,flow,cost));
+    return cost;
+}
+int main()
+{
+    int k = 0;
+    while( scanf("%d %d",&n,&m) != EOF && n|m)
+    {
+        k++;
+        int flow = 0;
+        add_Node(0,1,2,0);  //Add source point
+        add_Node(n,n+1,2,0);//Add meeting point
+        for(int i = 0; i < m; i ++)
+        {
+            int u,v,cost;
+            scanf("%d %d %d",&u,&v,&cost);
+            add_Node(u+1,v+1,1,cost);
+        }
+        int x = Min_Cost(0,n+1,flow);
+        if(x && flow == 2 ) printf("Instance #%d: %d\n",k,x);
+        else printf("Instance #%d: Not possible\n",k);
+        Clear(n+1);
+    }
+}
